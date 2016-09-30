@@ -1,3 +1,7 @@
 .Rproj.user
 .Rhistory
 .RData
+MS2process-package.RData
+MS2process.Rproj
+src-x64/*
+src-i386/*
