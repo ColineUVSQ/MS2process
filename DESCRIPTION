@@ -1,0 +1,17 @@
+Package: MS2process
+Title: Processing MS-MS spectra for database including.
+Version: 0.0.0.9000
+Authors@R: person("Alexis", "Delabriere", email = "alexis.delabriere@cea.fr", role = c("aut", "cre"))
+Description: This package allows the processing and the filtering of the package
+    based on multiplicity filtering and raw formula calculation.
+Depends:
+    R (>= 3.3.1)
+Imports:
+    stats,
+    mzR,
+    pracma,
+    RMassBank
+License: LGPL
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 5.0.1
