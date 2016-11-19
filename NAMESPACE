@@ -3,6 +3,7 @@
 export(combineMSMSSpectra)
 export(compositeDist)
 export(cosineDist)
+export(extractMS2spectra)
 export(getScanMzr)
 export(plotPrecursorSeq)
 exportMethods(plot)

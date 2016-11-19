@@ -1,46 +1,64 @@
+#'MS-MS spectrum class to handle an MS-MS spectrum
+#'
+#' @export
+#' @slot precursorMz The mass of the precursor.
+#' @slot precursorInt The mass of the precursor.
+#' @slot precursorScan The scan of the precursor.
+#' @slot energy The energy on which the value have been fragmented.
+#' @slot smiles The msiles correspodning to the molecules if available.
+#' @slot InChi The InChi corresponding to a molecule.
+#' @slot fused A boolean indicating if the molecule have been fused.
+#' @slot MSpeaks A data.frame containing the MSMS-spectra in the isoltation windows
+#' @slot MSMSpeaks A data.frame containing all the peaks of the msms spectrum.
+#' @slot precint A vector containg the intensity of the precursor on the MS spectrum when available.
+#' @slot prectime A vector containg the time of the the precursor on the MS spectrum.
+#' @slot transitions a data.frame giving the transitions between all the precursor type.
+#' @slot polarity the polarity of the acquisition, positive or negative.
+#' @slot charge A numeric giving the charge of the molecule.
+#' @slot param A list with supplementary parameters stocked.
+#' @aliases MSMSspectrum-class
+#' @exportClass MSMSspectrum
+
 setClass(
     "MSMSspectrum",slot = list(
         precursorMz="numeric",
         precursorInt="numeric",
         precursorScan="numeric",
         energy="numeric",
-        nChim="numeric",
         smiles="character",
+        InChi="character",
         fused="logical",
         MSpeaks = "data.frame",
         MSMSpeaks = "data.frame",
-        annotations = "list",
-        TICint="numeric",
-        TICtime="numeric",
-        fragments = "data.frame",
+        precint="numeric",
+        prectime="numeric",
         transitions = "data.frame",
         polarity = "numeric",
         charge = "numeric",
-        time = "numeric",
-        param="list"
+        param="list",
     ),
     prototype = list(
         precursorMz=numeric(0),
         precursorInt=numeric(0),
         precursorScan=numeric(0),
         energy=numeric(0),
-        nChim=numeric(0),
         smiles=character(0),
+        Inchi=chracter(0),
         fused=FALSE,
         MSpeaks=data.frame(),
         MSMSpeaks=data.frame(),
-        annotations= list(),
-        TICint=numeric(0),
-        TICtime=numeric(0),
-        fragments= data.frame(),
+        Precint=numeric(0),
+        Prectime=numeric(0),
         transitions = data.frame(),
         polarity=numeric(0),
         charge=numeric(0),
-        time=numeric(0),
         param=list()
     )
 )
 
+
+###A model for peaks is 
+#mz, int, formula, delta_ppm, mass_theo, num (if fused)
 
 
 setGeneric("getSpec", function(object, ...)
@@ -55,9 +73,15 @@ setGeneric("getSpec", function(object, ...)
 #' @return The spectra as a matrix.
 #' @examples 
 #' print("examples to be put here")
-setMethod("getSpec", "MSMSspectrum", function(object,multiplicity,level=c("MS2","MS1"),thresh=0) {
+#' 
+setMethod("getSpec", "MSMSspectrum", function(object,multiplicity= NULL,level=c("MS2","MS1"),thresh=0) {
     level=match.arg(level)
     tab=NULL
+    
+    ####Checking that it a multiplicity filtering spectra if possible.
+    if(multiplicity)
+    
+    
     if(level=="MS1"){
         tab=object@MSpeaks
     }
@@ -67,22 +91,20 @@ setMethod("getSpec", "MSMSspectrum", function(object,multiplicity,level=c("MS2",
     ##If it's a float.
     if(multiplicity<1){
         multiplicity=tab[,"num"]*multiplicity/max(tab[,"num"])
-        
     }
     
     if(thresh!=round(thresh)&thresh<1){
         thresh=max(tab[,"int"])*thresh
         
     }
-    
     pok=which(tab[,"int"]>thresh&tab[,"num"]>=multiplicity)
     if(length(pok)==0){
         toreturn=matrix(0,ncol=2,nrow=0)
         colnames(toreturn)=c("mz","int")
     }
     return(tab[pok,c("mz","int")])
-    
 })
+
 
 #' Get the MS-MS scan corresponding to a mass.
 #' 
@@ -99,65 +121,66 @@ setMethod("getSpec", "MSMSspectrum", function(object,multiplicity,level=c("MS2",
 #' @examples
 #' print("examples to be put here")
 getScanMzr<-function(msraw,mzprecursor,tol=1,MSwindows=10,type=c("split","ordered","none"),smoothSize=10){
-    type=match.arg(type)
+    type <- match.arg(type)
     if(class(msraw)!="mzRramp"){
-        msraw=openMSfile(msraw)
+        msraw <- openMSfile(msraw)
     }
-    thead=header(msraw)
-    pF=which((thead[,"precursorMZ"]>=mzprecursor-tol)&(thead[,"precursorMZ"]<=mzprecursor+tol)&
+    thead <- header(msraw)
+    pF <- which((thead[,"precursorMZ"]>=mzprecursor-tol)&(thead[,"precursorMZ"]<=mzprecursor+tol)&
                  thead[,"msLevel"]>=2)
     if(length(pF)==0) return(NA)
-    seqMS=thead[pF,"precursorScanNum"]
-    seqTIC=thead[which(thead[,"msLevel"]==1),"totIonCurrent"]
-    seqTime=thead[which(thead[,"msLevel"]==1),"retentionTime"]
+    seqMS <- thead[pF,"precursorScanNum"]
+    seqTIC <- thead[which(thead[,"msLevel"]==1),"totIonCurrent"]
+    seqTime <- thead[which(thead[,"msLevel"]==1),"retentionTime"]
+    
     ###Smoothing the intensity to find local maxima.
 
     
-    vMS=mzR::peaks(msraw,scans=seqMS)
-    vMS=lapply(vMS,centroid.fwhm)
-    vScans=mzR::peaks(msraw,scans=pF)
-    vScans=lapply(vScans,centroid.fwhm)
-    vRes=vector(length=length(vScans),mode="list")
+    vMS <- mzR::peaks(msraw,scans=seqMS)
+    vMS <- lapply(vMS,centroid.fwhm)
+    vScans <- mzR::peaks(msraw,scans=pF)
+    vScans <- lapply(vScans,centroid.fwhm)
+    vRes <- vector(length=length(vScans),mode="list")
     for(i in 1:length(vScans)){
-        spec=new("MSMSspectrum")
-        spec@precursorMz=thead[pF[i],"precursorMZ"]
-        spec@precursorScan=thead[pF[i],"precursorScanNum"]
-        spec@precursorInt=thead[pF[i],"precursorIntensity"]
-        spec@polarity=thead[pF[i],"polarity"]
-        spec@charge=thead[pF[i],"precursorCharge"]
-        spec@energy=thead[pF[i],"collisionEnergy"]
-        vs2=mzR::peaks(msraw,scans=thead[pF[i],"precursorScanNum"])
-        pMS=which((vMS[[i]][,"mz"]>=(mzprecursor-MSwindows))&(vMS[[i]][,"mz"]<=(mzprecursor+MSwindows)))
+        spec <- new("MSMSspectrum")
+        spec@precursorMz <- thead[pF[i],"precursorMZ"]
+        spec@precursorScan <- thead[pF[i],"precursorScanNum"]
+        spec@precursorInt <- thead[pF[i],"precursorIntensity"]
+        spec@polarity <- thead[pF[i],"polarity"]
+        spec@charge <- thead[pF[i],"precursorCharge"]
+        spec@energy <- thead[pF[i],"collisionEnergy"]
+        vs2 <- mzR::peaks(msraw,scans=thead[pF[i],"precursorScanNum"])
+        pMS <- which((vMS[[i]][,"mz"]>=(mzprecursor-MSwindows))&(vMS[[i]][,"mz"]<=(mzprecursor+MSwindows)))
         if(length(pMS)!=0){
-        spec@MSpeaks=vMS[[i]][pMS,c("mz","int")]
+        spec@MSpeaks <- vMS[[i]][pMS,c("mz","int")]
         }
         if(nrow(spec@MSpeaks)==0){
-            spec@MSpeaks$mz=numeric(0)
-            spec@MSpeaks$int=numeric(0)
+            spec@MSpeaks$mz <- numeric(0)
+            spec@MSpeaks$int <- numeric(0)
         }
-        spec@MSMSpeaks=vScans[[i]][,c("mz","int")]
-        spec@TICtime=seqTime
-        spec@TICint=seqTIC
-        spec@param[["MSwindows"]]=MSwindows
-        spec@time=thead[pF[i],"retentionTime"]
-        vRes[[i]]=spec
+        spec@MSMSpeaks <- vScans[[i]][,c("mz","int")]
+        spec@TICtime <- seqTime
+        spec@TICint <- seqTIC
+        spec@param[["MSwindows"]] <- MSwindows
+        spec@time <- thead[pF[i],"retentionTime"]
+        vRes[[i]] <- spec
     }
     
     c("splitted","ordered","none")
     if(type=="ordered"){
-        vener=sapply(vRes,function(x){x@energy})
-        vener=order(vener)
-        vRes=vRes[vener]
+        vener <- sapply(vRes,function(x){x@energy})
+        vener <- order(vener)
+        vRes <- vRes[vener]
     }else if(type=="split"){
-        ov=vRes
-        vRes=list()
-        vener=sapply(ov,function(x){x@energy})
-        oav=order(vener)
-        tener=table(vener)
-        cumtener=c(0,cumsum(tener))
-        name_ener=names(tener)
+        ov <- vRes
+        vRes <- list()
+        vener <- sapply(ov,function(x){x@energy})
+        oav <- order(vener)
+        tener <- table(vener)
+        cumtener <- c(0,cumsum(tener))
+        name_ener <- names(tener)
         for(i in 1:length(name_ener)){
-            vRes[[name_ener[i]]]=ov[oav[(cumtener[i]+1):cumtener[i+1]]]
+            vRes[[name_ener[i]]] <- ov[oav[(cumtener[i]+1):cumtener[i+1]]]
             
         }
     }
@@ -181,33 +204,33 @@ getScanMzr<-function(msraw,mzprecursor,tol=1,MSwindows=10,type=c("split","ordere
 #' print("examples to be put here")
 
 setMethod("plot", "MSMSspectrum", function(x,y=NULL,level=c("MS2","MS1"),xlim=NULL) {
-    level=match.arg(level)
+    level <- match.arg(level)
     if(level=="MS2"){
-        prec=which.min(abs(x@MSMSpeaks[,"mz"]-mean(x@precursorMz)))
-        if(is.null(xlim))  xlim=c(0,max(x@MSMSpeaks[,"mz"]))
-        title=NULL
+        prec <- which.min(abs(x@MSMSpeaks[,"mz"]-mean(x@precursorMz)))
+        if(is.null(xlim)) xlim <- c(0,max(x@MSMSpeaks[,"mz"]))
+        title <- NULL
         if(x@fused){
-        title=paste(level,"fused MS-MS spectra","ener",
+        title <- paste(level,"fused MS-MS spectra","ener",
                     x@energy[1],
                     "precursor",
                     paste(sprintf("%0.4f",range(x@precursorMz)),collapse="-"))
             
         }else{
-        title=paste(level,"spectrum","ener",x@energy,"precursor",sprintf("%0.4f",x@precursorMz))
+        title <- paste(level,"spectrum","ener",x@energy,"precursor",sprintf("%0.4f",x@precursorMz))
         }
         plot(x@MSMSpeaks[,"mz"],x@MSMSpeaks[,"int"],type="h",lwd=3,col="black",xlab="m/z",main=title,xlim=xlim,ylab="int")
         points(x@MSMSpeaks[prec,"mz"],x@MSMSpeaks[prec,"int"],lwd=3,col="red",type="h")
     }
     if(level=="MS1"){
-        prec=which.min(abs(x@MSpeaks[,"mz"]-mean(x@precursorMz)))
-        if(is.null(xlim))  xlim=range(x@MSpeaks[,"mz"])
+        prec <- which.min(abs(x@MSpeaks[,"mz"]-mean(x@precursorMz)))
+        if(is.null(xlim)) xlim <- range(x@MSpeaks[,"mz"])
         if(x@fused){
-            title=paste(level,"fused MS spectra","ener",
+            title <- paste(level,"fused MS spectra","ener",
                         x@energy[1],
                         "precursor",
                         paste(sprintf("%0.4f",range(x@precursorMz)),collapse="-"))
         }else{
-            title=paste(level,"spectrum","ener",x@energy,"precursor",sprintf("%0.4f",x@precursorMz))
+            title <- paste(level,"spectrum","ener",x@energy,"precursor",sprintf("%0.4f",x@precursorMz))
         }
         plot(x@MSpeaks[,"mz"],x@MSpeaks[,"int"],type="h",lwd=3,col="black",xlab="m/z",main=title,xlim=xlim,ylab="int")
         points(x@MSpeaks[prec,"mz"],x@MSpeaks[prec,"int"],lwd=3,col="red",type="h")
@@ -228,52 +251,52 @@ setMethod("plot", "MSMSspectrum", function(x,y=NULL,level=c("MS2","MS1"),xlim=NU
 #' @examples
 #' print("examples to be put here")
 plotPrecursorSeq<-function(lSpec,ylim=NULL,xlim=NULL){
-    vtime=sapply(lSpec,function(x){
+    vtime <- sapply(lSpec,function(x){
         x@time
     })
-    vint=sapply(lSpec,function(x){
+    vint <- sapply(lSpec,function(x){
         x@precursorInt
     })
-    vener=sapply(lSpec,function(x){
+    vener <- sapply(lSpec,function(x){
         x@energy
     })
-    if(is.null(xlim)) xlim=range(vtime)
-    if(is.null(ylim)) ylim=c(0,max(vint))
-    vu=sort(unique(vener))
-    colvec=rainbow(length(vu))
-    pM=match(vener,vu)
-    title=paste("precursor intensity sequence")
+    if(is.null(xlim)) xlim <- range(vtime)
+    if(is.null(ylim)) ylim <- c(0,max(vint))
+    vu <- sort(unique(vener))
+    colvec <- rainbow(length(vu))
+    pM <- match(vener,vu)
+    title <- paste("precursor intensity sequence")
     plot(vtime,vint,main=title,xlab="Time",ylab="Intensity",col=colvec[pM],type="h",lwd=2)
-    legend("topright",as.character(vu),col=colvec,lwd=2)
+    legend("topright",as.character(vu),col <- colvec,lwd=2)
     return(invisible(data.frame(time=vtime,int=vint)))
 }
 
 findPeaksLimits<-function(seq,pos){
-    a=pos-1
-    b=pos+1
-    n=length(seq)
+    a <- pos-1
+    b <- pos+1
+    n <- length(seq)
     #print(seq)
     while(a>1&seq[a]<seq[a+1]){
-        a=a-1
+        a <- a-1
     }
     while(b<n&seq[b]<seq[b-1]){
-        b=b-1
+        b <- b-1
     }
     c(max(a,1),min(b,length(seq)))
 }
 ###Function which check that the precursor intensity peak is on the TIC peak.
 havePrecursor<-function(lSpec,TICseq,TICtime,timeseq,type=c("FIA","LC"),SNR=2){
-    type=match.arg(type)
-    pmax=NULL
-    seqprec=plotPrecursorSeq(lSpec)
-    seqTime=sapply(lSpec,function(x){x@time})
-    pmmaxPrecursor=which.max(seqprec[,"int"])
-    limit=NULL
+    type <- match.arg(type)
+    pmax <- NULL
+    seqprec <- plotPrecursorSeq(lSpec)
+    seqTime <- sapply(lSpec,function(x){x@time})
+    pmmaxPrecursor <- which.max(seqprec[,"int"])
+    limit <- NULL
     if(type=="FIA"){
-        pm=which.max(TICseq)
-        limit=findPeaksLimits(TICseq,pm)
+        pm <- which.max(TICseq)
+        limit <- findPeaksLimits(TICseq,pm)
         ##half.max
-        limit=c(limit[1]-floor((pm-limit[1])/SNR),limit[2]+floor((limit[2]-pm)/SNR))
+        limit <- c(limit[1]-floor((pm-limit[1])/SNR),limit[2]+floor((limit[2]-pm)/SNR))
         # print(TICtime[limit])
         # print(seqprec[pmmaxPrecursor,"time"])
         if(seqprec[pmmaxPrecursor,"time"]>TICtime[limit[1]]&
@@ -285,20 +308,20 @@ havePrecursor<-function(lSpec,TICseq,TICtime,timeseq,type=c("FIA","LC"),SNR=2){
     }
     if(type=="LC"){
         ##Closest pos in time
-        pok=which(seqprec[,"int"]>seqprec[pmmaxPrecursor,"int"]/SNR)
+        pok <- which(seqprec[,"int"]>seqprec[pmmaxPrecursor,"int"]/SNR)
         if(length(pok)==0){
             return(NA)
         }else{
-            limit=range(pok)
-            limit[1]=which.min(abs(seqTime[limit[1]]-1-TICtime))
-            limit[2]=which.min(abs(seqTime[limit[2]]+1-TICtime))
+            limit <- range(pok)
+            limit[1] <- which.min(abs(seqTime[limit[1]]-1-TICtime))
+            limit[2] <- which.min(abs(seqTime[limit[2]]+1-TICtime))
             return(limit)
         }
     }
     ##TODO THE LC-MS case.
 }
 
-#'COmbines multiples MS-MS spectra as a signle consensus spectrum.
+#'Combines multiples MS-MS spectra as a signle consensus spectrum.
 #'
 #'Return the consensus spectra of a compounds given a filename and a mass
 #'with one spectra by energy.
@@ -487,4 +510,110 @@ getUniquePeaksl<-function(ppm,listcfia,inter=0.05,nPoints=512,sleep=0,intreat=c(
     to_return=do.call(rbind,resList)
     colnames(to_return)=c("mz","int","num")
     return(as.data.frame(to_return))
+}
+
+
+closeMatch <- function(x,y,ppm=3,dmz=0.005,symmetric=FALSE) {
+    
+    if (any(is.na(y)))
+        stop("NA's are not allowed in y !\n")
+    ok <- !(is.na(x))
+    ans <- order(x)
+    keep <- seq_along(ok)[ok]
+    xidx <- ans[ans %in% keep]
+    xs <- x[xidx]
+    yidx <- order(y)
+    ys <- y[yidx]
+    if (!is.double(xs))
+        xs <- as.double(xs)
+    if (!is.double(ys))
+        ys<- as.double(ys)
+    if (!is.integer(xidx))
+        xidx <- as.integer(xidx)
+    if (!is.integer(yidx))
+        yidx <- as.integer(yidx)
+    
+    fm <- .Call("closeMatchPpm", xs, ys, xidx, yidx, as.integer(length(x)), as.double(ppm),as.double(0.005),PACKAGE = "MS2process")
+    fm2 <- vector("list", length=length(fm))
+    ##stop("!")
+    if (symmetric){
+        for (a in 1:length(fm)) {
+            if (!is.null(fm[[a]][1])){
+                tmp<-NULL
+                for (b in 1:length(fm[[a]])){
+                    if ((abs(x[a]-y[fm[[a]]][b]) == min(abs(x[a]-y[fm[[a]][b]]),
+                                                        abs(x[a]  -y[fm[[a]][b]-1]),
+                                                        abs(x[a]  -y[fm[[a]][b]+1]),
+                                                        abs(x[a-1]-y[fm[[a]][b]]),
+                                                        abs(x[a+1]-y[fm[[a]][b]]), na.rm=TRUE)
+                    )) {
+                        tmp<-c(tmp, fm[[a]][b])
+                    }
+                }
+                fm2[[a]]<-tmp
+            }
+        }
+    }else {
+        fm2 <- fm}
+    fm2
+}
+
+
+
+#'Extract the MS2 spectra form an FIA acquisition.
+#'
+#'Return the consensus spectra of a compounds given a filename and a mass
+#'with one spectra by energy.
+#'
+#'@export
+#'@param fname Tthe mzML file to be parsed.
+#'@param mz the mass of the ocmpoudns to be found.
+#'@param ppm the ppm parameter used by the density function.
+#'@param msWindows the size of the ms windows to search the prcursor in.
+#'@param multiplicity the multiplicituy to be used for th efiltering of the peaks.
+#'@return A list of spectra classified by energy.
+#'@examples
+#'print("examples to be put here")
+extractMS2spectra<-function(cfile,ppm=5,tolMS=0.5,mzlist=NULL,
+                            rtlist=NULL,type=c("split","ordered","none"),
+                            paramcentwave=list(ppm=5,snthresh=3,peakwidth=c(10,50),prefilter=c(3,500))
+                            ){
+    type=match.arg(type)
+    if(require(xcms)){
+        if(!all(sapply(cfile,file.exists))) stop("Missing files")
+        xraw=xcmsRaw(cfile)
+        paramcentwave$object=xraw
+        tp=do.call("findPeaks.centWave",args=paramcentwave)
+        pok=NULL
+        
+        if(!is.null(mzlist)){
+            lFound=closeMatch(mzlist,tp[,"mz"],ppm=ppm)
+            pok=sapply(lFound,is.null)
+        }else{
+            pok=rep(FALSE,nrow(tp))
+            mzlist=c(tp[,"mz"])
+        }
+        print(sum(pok))
+        resList=vector(length(mzlist),mode="list")
+        for(k in 1:length(k)){
+            if(pok[i]) next
+            resList[[k]]=getScanMzr(openMSfile(cfile),mzprecursor = mzlist(pok[i]),MSwindows = tolMS,type = type)
+        }
+    }
+    return(resList)
+}
+
+#' Export an MS2 spectra under a format.
+
+
+
+
+####Examples smies
+csmils <- '[H][C@@]12CC[C@H](C(C)=O)[C@@]1(C)CC[C@@]1([H])[C@@]2([H])CC[C@@]2([H])CC(=O)CC[C@]12C'
+ps <- load.molecules("C:/Users/AD244905/Desktop/test_smiles.txt")
+
+generateFormulaMSMS <- function(spectra,smiles){
+	###Parsing the spectra
+	
+	
 }

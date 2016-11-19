@@ -10,7 +10,8 @@ Imports:
     stats,
     mzR,
     pracma,
-    RMassBank
+    RMassBank,
+    jsonlite
 License: LGPL
 Encoding: UTF-8
 LazyData: true

@@ -4,7 +4,8 @@
 \alias{cosineDist}
 \title{Calculate the cosine similarity.}
 \usage{
-cosineDist(s1, s2, mzexp = 2, intexp = 0.5, ppm, mzmin = 0.005)
+cosineDist(s1, s2, mzexp = 2, intexp = 0.5, ppm, mzmin = 0.005,
+  penality = c("logint", "uniform", "none"))
 }
 \arguments{
 \item{s1}{z MSMSpsectrum object}
@@ -16,6 +17,8 @@ cosineDist(s1, s2, mzexp = 2, intexp = 0.5, ppm, mzmin = 0.005)
 \item{ppm}{the tolerance in the matching in ppm}
 
 \item{mzmin}{the minimum tolerance}
+
+\item{penality}{the type of the penality for missing peaks.}
 
 \item{s1}{a MSMSpsectrum object}
 }
