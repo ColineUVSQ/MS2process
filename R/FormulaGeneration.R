@@ -182,5 +182,5 @@ list_test['2'] <- 'demo/demo-data/txt/chelidonine_msms2.txt'
 ###WORKING EXAMPLES
 callSirius(list_test)
 
-parseTree <- 
+#parseTree <- 
 ###Testing the dataset
