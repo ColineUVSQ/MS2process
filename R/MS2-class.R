@@ -35,7 +35,7 @@ setClass(
         transitions = "data.frame",
         polarity = "numeric",
         charge = "numeric",
-        param="list",
+        param="list"
     ),
     prototype = list(
         precursorMz=numeric(0),
