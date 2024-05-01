@@ -38,7 +38,7 @@ setMethod("toMgf", "MSMSspectrum", function(object,filename,level=c("MS2","MS1")
 	reduceif <- function(x){sprintf(paste0('%0.',intdigit,'f'),x)}	
 	
 	if(is.null(title)) title = paste(level,'spectrum for m/z',reducemf(object@precursorMz))
-	tPeaks <- getSpec(object,multiplicity= NULL,level=level,thresh=thresh))
+	tPeaks <- getSpec(object,multiplicity= NULL,level=level,thresh=thresh)
 	vlines <- character(7+nrow(tPeaks))
 	vlines[1] <- 'BEGIN IONS'
 	vlines[2] <- paste0('PEPMASS=',reducemf(object@precursorMz))
@@ -46,5 +46,6 @@ setMethod("toMgf", "MSMSspectrum", function(object,filename,level=c("MS2","MS1")
 	vlines[4] <- title
 	vlines[5:(5+nrow(tPeaks))] <- mapply(reducemf(tPeaks[,1]),reduceif(tPeaks[,2]),FUN=paste)
 	vlines[(7+nrow(tPeaks))] <- 'END IONS'
-    vlines
+    ## not finished maybe
+}
 )
