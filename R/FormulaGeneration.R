@@ -72,6 +72,7 @@ sirius_opts[[SIR.OPT.OUTPUT]] <- 'character'
 
 ###TODO make a function to do this shit.
 #sirius_opts_values[[SIR.OPT.ELEMENTS]] <- 'CHNOPSCl'
+sirius_opts_values <- list()
 sirius_opts_values[[SIR.OPT.ISOTOPE]] <- c('omit','filter','score')
 sirius_opts_values[[SIR.OPT.PROFILE]] <- c('qtof', 'orbitrap', 'fticr')
 sirius_opts_values[[SIR.OPT.FORMAT]] <- c('json', 'dot', 'sirius')
