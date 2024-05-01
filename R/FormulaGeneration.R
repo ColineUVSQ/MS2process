@@ -159,7 +159,7 @@ setGeneric("callSirius", function(object, ...)
 #' @examples 
 #' print("examples to be put here")
 setMethod("callSirius", "MSMSspectrum", function(object,level=c("MS2","MS1"),multiplicity=0.5, thresh=0.005, title = NULL, mzdigit = 4,intdigit = 0) {
-	
+}
 
 ###Testing on an example 
 #filename <- 'temp/chelidonine_msms2.json'
