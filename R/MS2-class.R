@@ -30,8 +30,8 @@ setClass(
         fused="logical",
         MSpeaks = "data.frame",
         MSMSpeaks = "data.frame",
-        precint="numeric",
-        prectime="numeric",
+        Precint="numeric",
+        Prectime="numeric",
         transitions = "data.frame",
         polarity = "numeric",
         charge = "numeric",
@@ -43,7 +43,7 @@ setClass(
         precursorScan=numeric(0),
         energy=numeric(0),
         smiles=character(0),
-        Inchi=chracter(0),
+        InChi=character(0),
         fused=FALSE,
         MSpeaks=data.frame(),
         MSMSpeaks=data.frame(),
@@ -609,8 +609,8 @@ extractMS2spectra<-function(cfile,ppm=5,tolMS=0.5,mzlist=NULL,
 
 
 ####Examples smies
-csmils <- '[H][C@@]12CC[C@H](C(C)=O)[C@@]1(C)CC[C@@]1([H])[C@@]2([H])CC[C@@]2([H])CC(=O)CC[C@]12C'
-ps <- load.molecules("C:/Users/AD244905/Desktop/test_smiles.txt")
+#csmils <- '[H][C@@]12CC[C@H](C(C)=O)[C@@]1(C)CC[C@@]1([H])[C@@]2([H])CC[C@@]2([H])CC(=O)CC[C@]12C'
+#ps <- load.molecules("C:/Users/AD244905/Desktop/test_smiles.txt")
 
 generateFormulaMSMS <- function(spectra,smiles){
 	###Parsing the spectra
