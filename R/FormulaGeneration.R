@@ -162,8 +162,8 @@ setMethod("callSirius", "MSMSspectrum", function(object,level=c("MS2","MS1"),mul
 	
 
 ###Testing on an example 
-filename <- 'temp/chelidonine_msms2.json'
-parseSiriusTree(filename)
+#filename <- 'temp/chelidonine_msms2.json'
+#parseSiriusTree(filename)
 
 
 #Testing of the function
@@ -172,15 +172,15 @@ parseSiriusTree(filename)
 
 
 
-list_test <- list(
-	formula='C20H19NO5',
-	format='json',
-	output='temp'
-)
-list_test['2'] <- 'demo/demo-data/txt/chelidonine_msms2.txt'
+#list_test <- list(
+#	formula='C20H19NO5',
+#	format='json',
+#	output='temp'
+#)
+#list_test['2'] <- 'demo/demo-data/txt/chelidonine_msms2.txt'
 
 ###WORKING EXAMPLES
-callSirius(list_test)
+#callSirius(list_test)
 
 #parseTree <- 
 ###Testing the dataset
