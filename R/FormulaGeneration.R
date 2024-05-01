@@ -115,7 +115,7 @@ makeOptions <- function(list_args){
 
 }
 
-callSirius <- function(list_args,output_name = ){
+callSirius <- function(list_args,output_name){
 	res <- NULL
 	###Making the system call depending of the os.
 	if(.Platform$OS.type == "unix") {
